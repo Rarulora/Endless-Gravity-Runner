@@ -1,22 +1,22 @@
 using UnityEngine;
-using TMPro; // TextMeshPro
+using TMPro;
 
 public class MenuUI : MonoBehaviour
 {
 	[Header("UI Refs")]
 	[SerializeField] private TMP_Text highScoreText;
 
-	const string HIGHSCORE_KEY = "HighScore";
-
 	private void OnEnable()
 	{
 		RefreshHighScore();
-		GameManager.OnStateChanged += HandleState;
+		if (GameManager.Instance != null)
+			GameManager.OnStateChanged += HandleState;
 	}
 
 	private void OnDisable()
 	{
-		GameManager.OnStateChanged -= HandleState;
+		if (GameManager.Instance != null)
+			GameManager.OnStateChanged -= HandleState;
 	}
 
 	private void HandleState(GameState s)
@@ -27,12 +27,29 @@ public class MenuUI : MonoBehaviour
 
 	private void RefreshHighScore()
 	{
-		int hs = PlayerPrefs.GetInt(HIGHSCORE_KEY, 0);
-		highScoreText.text = $"<color=grey><b>High Score: </b></color>{hs}";
+		if (!highScoreText) return;
+
+		if (GameManager.Instance == null)
+		{
+			highScoreText.text =
+				"<color=grey><b>High Score: </b></color>-\n\n" +
+				"<color=grey><b>Last Score: </b></color>-";
+			return;
+		}
+
+		var data = GameManager.Instance.Data;
+		highScoreText.text =
+			$"<color=grey><b>High Score: </b></color>{data.HighScore}\n\n" +
+			$"<color=grey><b>Last Score: </b></color>{data.LastScore}";
 	}
 
 	public void OnPlayButton()
 	{
-		GameManager.Instance.StartRun();
+		if (GameManager.Instance) GameManager.Instance.StartRun();
+	}
+	public void OnResetSavesButton()
+	{
+		GameManager.Instance.ResetAllSaves();
+		RefreshHighScore();
 	}
 }

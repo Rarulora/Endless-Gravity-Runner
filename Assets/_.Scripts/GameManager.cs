@@ -1,4 +1,5 @@
 using System;
+using UnityEditor.Overlays;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -14,16 +15,18 @@ public class GameManager : MonoBehaviour
 	const string GAMESCENE = "Gameplay";
 	const string MAINMENUSCENE = "MainMenu";
 
+	public SaveData Data { get; private set; } = new SaveData();
+
 	private void Awake()
 	{
-		if(Instance == null)
-			Instance = this;
-		else
-		{
-			Destroy(this);
-			return;
-		}
+		if (Instance == null) Instance = this;
+		else { Destroy(gameObject); return; }
+
 		DontDestroyOnLoad(Instance);
+
+		SaveSystem.SyncInIfWebGL();
+
+		Load();
 
 		SetState(startState, force: true);
 	}
@@ -42,14 +45,32 @@ public class GameManager : MonoBehaviour
 		SceneManager.LoadScene(MAINMENUSCENE);
 		SetState(GameState.MainMenu, true);
 	}
+
 	public void StartRun()
 	{
 		SceneManager.LoadScene(GAMESCENE);
 		SetState(GameState.Gameplay);
 	}
+
 	public void Pause() => SetState(GameState.Pause);
 	public void Resume() => SetState(GameState.Gameplay);
-	public void GameOver() => SetState(GameState.GameOver);
+	public void GameOver()
+	{
+		int currentScore = 0;
+		if (ScoreManager.Instance != null)
+			currentScore = ScoreManager.Instance.Score;
+		else
+			currentScore = Data.LastScore;
+
+		Data.LastScore = currentScore;
+		if (currentScore > Data.HighScore)
+			Data.HighScore = currentScore;
+
+		Save();
+
+		SetState(GameState.GameOver);
+	}
+
 	public void RestartRun()
 	{
 		SceneManager.LoadScene(GAMESCENE);
@@ -59,7 +80,6 @@ public class GameManager : MonoBehaviour
 	public void SetState(GameState next, bool force = false)
 	{
 		if (!force && State == next) return;
-
 		State = next;
 		ApplyTimeScale(next);
 		OnStateChanged?.Invoke(State);
@@ -70,5 +90,27 @@ public class GameManager : MonoBehaviour
 		Time.timeScale = (s == GameState.Gameplay) ? 1f : 0f;
 		if (s == GameState.GameOver)
 			Time.timeScale = 0.01f;
+	}
+
+	public void Save()
+	{
+		if (ScoreManager.Instance != null)
+		{
+			Data.LastScore = ScoreManager.Instance.Score;
+			Data.HighScore = Math.Max(Data.HighScore, ScoreManager.Instance.HighScore);
+		}
+
+		SaveSystem.Save(Data);
+	}
+
+	public void Load()
+	{
+		Data = SaveSystem.Load();
+	}
+
+	public void ResetAllSaves()
+	{
+		SaveSystem.DeleteAll();
+		Data = new SaveData();
 	}
 }
