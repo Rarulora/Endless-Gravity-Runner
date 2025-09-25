@@ -153,10 +153,4 @@ MIT — see `LICENSE` (add one if you need).
 
 ---
 
-## 🔍 Troubleshooting
-- **WebGL linker error `undefined symbol: GR_SyncFS_In/Out`**  
-  Ensure `WebGLSyncFS.jslib` exists at `Assets/Plugins/WebGL/`, platform set to **WebGL**, names match exactly, and rebuild. Clear `Library/` if needed.
-- **SAB/Threads errors on itch.io**  
-  Enable the **SharedArrayBuffer support** option; avoid external assets without CORS/CORP.
-
 Enjoy running on the ceiling 🌀
